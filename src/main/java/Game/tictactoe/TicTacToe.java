@@ -2,8 +2,7 @@ package Game.tictactoe;
 
 import java.io.IOException;
 
-import static Game.tictactoe.Bot.clearInput;
-import static Game.tictactoe.Bot.getBotMove;
+import static Game.tictactoe.Bot.*;
 import static Game.tictactoe.TicTacToeFuncs.*;
 
 public class TicTacToe {
