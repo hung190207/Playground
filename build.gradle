@@ -1,4 +1,5 @@
 plugins {
+    // for building Java application with a main method entry point
     id "application"
 }
 
@@ -18,6 +19,12 @@ repositories {
 }
 
 dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
