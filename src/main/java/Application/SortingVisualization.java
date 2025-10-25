@@ -27,6 +27,10 @@ public class SortingVisualization extends JFrame {
 
     static double scaleAnimation = 0.0;
 
+    static JComboBox<String> algorithmSelector;
+    static JButton sortButton;
+    static JButton stopButton;
+
     void randArray() {
         Random rand = new Random();
         for (int i = 0; i < ARRAY_SIZE; i++) {
@@ -45,19 +49,43 @@ public class SortingVisualization extends JFrame {
         comparingIndex = -1;
         randArray();
         sortPanel.repaint();
+        updateButtons();
+    }
+
+    void stopSorting() {
+        isSorting = false;
+        currentIndex = -1;
+        comparingIndex = -1;
+        updateButtons();
+    }
+
+    void updateButtons() {
+        sortButton.setEnabled(!isSorting);
+        stopButton.setEnabled(isSorting);
     }
 
     void startSorting() {
         if (isSorting) return;
         isSorting = true;
+        updateButtons();
 
         Thread thread = new Thread(() -> {
-            bubbleSort();
+            String selectedAlgorithm = (String) algorithmSelector.getSelectedItem();
 
-            celebrateCompletion();
+            switch (selectedAlgorithm) {
+                case "Bubble Sort":
+                    bubbleSort();
+                    break;
+                case "Selection Sort":
+                    selectionSort();
+                    break;
+                case "Quick Sort":
+                    quickSort(0, array.length - 1);
+                    break;
+            }
             isSorting = false;
+            updateButtons();
             sortPanel.repaint();
-
         });
         thread.start();
     }
@@ -88,49 +116,6 @@ public class SortingVisualization extends JFrame {
                 e.printStackTrace();
             }
         }
-        pulseProgress = 0.0;
-    }
-
-    void celebrateCompletion() {
-        for (int wave = 0; wave < 2; wave++) {
-            for (int i = 0; i < array.length - 1; i += 2) {
-                lastSortedIndex = i;
-                pulseProgress = 1.0;
-                sortPanel.repaint();
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                lastSortedIndex = i + 1;
-                sortPanel.repaint();
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            for (int i = 1; i < array.length - 1; i += 2) {
-                lastSortedIndex = i;
-                pulseProgress = 1.0;
-                sortPanel.repaint();
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                lastSortedIndex = i + 1;
-                sortPanel.repaint();
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        lastSortedIndex = -1;
         pulseProgress = 0.0;
     }
 
@@ -195,6 +180,96 @@ public class SortingVisualization extends JFrame {
         }
     }
 
+    public static void selectionSort() {
+        int n = array.length;
+
+        for (int i = 0; i < n - 1; i++) {
+            if (!isSorting) return;
+
+            int minIndex = i;
+            currentIndex = i;
+
+            for (int j = i + 1; j < n; j++) {
+                if (!isSorting) return;
+
+                comparingIndex = j;
+                animateComparison();
+
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                if (array[j] < array[minIndex]) {
+                    minIndex = j;
+                }
+            }
+
+            if (minIndex != i) {
+                animateSwap(i, minIndex);
+            }
+
+            markAsSorted(i);
+        }
+
+        markAsSorted(n - 1);
+
+        for (int i = 0; i < n; i++) {
+            isSorted[i] = true;
+        }
+    }
+
+    public static void quickSort(int low, int high) {
+        if (!isSorting) return;
+
+        if (low < high) {
+            int pivotIndex = partition(low, high);
+
+            markAsSorted(pivotIndex);
+
+            quickSort(low, pivotIndex - 1);
+            quickSort(pivotIndex + 1, high);
+        } else if (low == high) {
+            markAsSorted(low);
+        }
+    }
+
+    public static int partition(int low, int high) {
+        if (!isSorting) return low;
+
+        int pivot = array[high];
+        int i = low - 1;
+
+        currentIndex = high;
+
+        for (int j = low; j < high; j++) {
+            if (!isSorting) return low;
+
+            comparingIndex = j;
+            animateComparison();
+
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            if (array[j] < pivot) {
+                i++;
+                if (i != j) {
+                    animateSwap(i, j);
+                }
+            }
+        }
+
+        if (i + 1 != high) {
+            animateSwap(i + 1, high);
+        }
+
+        return i + 1;
+    }
+
     public SortingVisualization() {
         setTitle("Sorting Visualization");
         setSize(WIDTH, HEIGHT);
@@ -210,12 +285,19 @@ public class SortingVisualization extends JFrame {
 
         JPanel buttonPanel = new JPanel();
 
-        JButton sortButton = new JButton("Sort");
+        String[] algorithms = {"Bubble Sort", "Selection Sort", "Quick Sort"};
+        algorithmSelector = new JComboBox<>(algorithms);
+
+        sortButton = new JButton("Sort");
+        stopButton = new JButton("Stop");
         JButton resetButton = new JButton("Reset");
         JButton randButton = new JButton("Randomize");
 
         sortButton.addActionListener(e -> {
             startSorting();
+        });
+        stopButton.addActionListener(e -> {
+            stopSorting();
         });
         resetButton.addActionListener(e -> {
             reset();
@@ -225,14 +307,17 @@ public class SortingVisualization extends JFrame {
             sortPanel.repaint();
         });
 
+        buttonPanel.add(new JLabel("Algorithm:"));
+        buttonPanel.add(algorithmSelector);
         buttonPanel.add(sortButton);
+        buttonPanel.add(stopButton);
         buttonPanel.add(resetButton);
         buttonPanel.add(randButton);
 
         add(buttonPanel, BorderLayout.NORTH);
 
+        updateButtons();
     }
-
 
     class SortPanel extends JPanel {
         @Override
@@ -252,7 +337,6 @@ public class SortingVisualization extends JFrame {
                     int scale = (int) (scaleAnimation * 10);
                     width += scale;
                     x -= scale / 2;
-                    barWidth += scale;
                     y -= scale;
                 }
 
@@ -283,9 +367,9 @@ public class SortingVisualization extends JFrame {
                 } else {
                     float ratio = (float) i / array.length;
                     g2d.setColor(new Color(
-                            (int) (148 * (1 - ratio) + 255 * ratio),
-                            (int) (0 * (1 - ratio) + 192 * ratio),
-                            (int) (211 * (1 - ratio) + 203 * ratio)));
+                            (int) (100 * (1 - ratio) + 255 * ratio),
+                            (int) (150 * (1 - ratio) + 192 * ratio),
+                            (int) (255 * (1 - ratio) + 203 * ratio)));
                 }
                 g2d.fillRect(x, y, width, barHeight);
 
@@ -299,6 +383,7 @@ public class SortingVisualization extends JFrame {
                 g2d.drawString(value, textX, textY);
             }
         }
+
     }
 
     public static void main(String[] args) {
@@ -307,5 +392,4 @@ public class SortingVisualization extends JFrame {
             frame.setVisible(true);
         });
     }
-
 }
